@@ -1,0 +1,10 @@
+# Transcribed by hand from Vince's Lab 1 report (submitted Oct 8, 2026): Appendix 5 and Figure 4-9 captions. REAL OSCAR V2 data, but PEAK READINGS ONLY (no time series).
+# x values are RAW sensor readings (mm) measured from sensor zero, NOT from the rest position. rest_level_mm = ys quoted in the figure captions (needed to remove the offset).
+# source_note: where the number came from. Order of peaks: x1 at t1, next consecutive peak x2 at t2.
+data_source,part,trial_label,load_mass_kg,springs,x1_raw_mm,x2_raw_mm,t1_s,t2_s,rest_level_mm,source_note
+real_OSCAR_V2_lab1,A/C,A1_C1,0.8,small,41.08,27.376,14.095,14.4,11.8445,Appendix5 rows A1 and C1; Fig5 ys
+real_OSCAR_V2_lab1,A,A2,1.2,small,41.08,27.41,3.58,3.94,12.4916,Appendix5 row A2 and B1; Fig6 ys (P3 settled ref)
+real_OSCAR_V2_lab1,A,A3,0.6,small,41.08,23.0,4.67,4.94,8.3,Appendix5 row A3; Fig4 ys approx
+real_OSCAR_V2_lab1,B,B2,1.2,medium,20.75,12.5,2.97,3.21,8.4,Appendix5 row B2; Fig7 ys approx
+real_OSCAR_V2_lab1,D,D1,1.2,medium,23.88,15.24,3.69,3.93,8.3,Appendix5 row D1; Fig8 ys approx
+real_OSCAR_V2_lab1,D,D2,1.2,medium,50.00,36.32,5.10,5.34,7.6,Appendix 4 handwritten calc ONLY (not in Appendix5). CONFLICTS with Fig9 caption peaks 38.58/22.95/14.336 mm - verify before use

@@ -1,0 +1,910 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Spring Cart Rig · MSE 281 Lab 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Spring-cart teaching rig with adjacent expandable plots and parameter controls. */
+:root{
+  --bg:#e9edf0; --panel:#f8fafb; --ink:#18212a; --muted:#5d6b77; --line:#c9d2d9; --rail:#8b98a3;
+  --metal:#a9b5bf; --metal-dark:#6f7d89; --cart:#2f4a63; --accent:#d9661f;
+  --x:#1f6fd1; --v:#178a5a; --a:#b8338a; --warn:#c2362f;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161b; --panel:#192027; --ink:#e3e9ee; --muted:#93a1ad; --line:#2c3640; --rail:#5f6c78;
+  --metal:#6e7c88; --metal-dark:#45515c; --cart:#7fa6c9; --accent:#f08a43;
+  --x:#5aa2ff; --v:#3fcf8e; --a:#e46bc0; --warn:#f06a5f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161b; --panel:#192027; --ink:#e3e9ee; --muted:#93a1ad; --line:#2c3640; --rail:#5f6c78;
+  --metal:#6e7c88; --metal-dark:#45515c; --cart:#7fa6c9; --accent:#f08a43;
+  --x:#5aa2ff; --v:#3fcf8e; --a:#e46bc0; --warn:#f06a5f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 32px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.01em;margin:0;line-height:1;text-wrap:balance;text-transform:uppercase}
+.sub{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.eq{font-family:var(--mono);font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:6px 10px;border-radius:4px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.rig{position:relative;overflow:hidden}
+#rig{display:block;width:100%;height:250px;touch-action:none;cursor:grab}
+.rig-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+button{font-family:var(--body);font-weight:600;font-size:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  border-radius:4px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--ink);color:var(--panel);border-color:var(--ink);min-width:84px}
+.spacer{flex:1}
+.clock{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--muted)}
+.derived{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.d{padding:9px 12px;border-right:1px solid var(--line);min-width:0}
+.d:last-child{border-right:0}
+.d b{display:block;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.d span{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums}
+.d.hot span{color:var(--warn)}
+.chart-head{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:1px solid var(--line);gap:8px;flex-wrap:wrap}
+.chart-head h2,.ctl-head h2{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:.08em;text-transform:uppercase;margin:0}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+#chart{display:block;width:100%;height:450px}
+.ctl-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line)}
+.presets{display:flex;gap:6px;flex-wrap:wrap}
+.presets button{font-weight:500;font-size:12px;padding:5px 9px}
+.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.group{padding:12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:12px;min-width:0}
+.group:last-child{border-right:0}
+.group h3{margin:0;font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.ctl output{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ctl .note{font-size:11.5px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:22px}
+@media (max-width:760px){
+  .controls{grid-template-columns:1fr}
+  .group{border-right:0;border-bottom:1px solid var(--line)}
+  .group:last-child{border-bottom:0}
+  .derived{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .d{border-bottom:1px solid var(--line)}
+  .d:nth-child(2n){border-right:0}
+  .d:last-child{grid-column:1/-1;border-bottom:0}
+  #rig{height:210px}
+  #chart{height:440px}
+}
+@media (max-width:520px){
+  h1{font-size:26px}
+}
+
+.mode-panel{padding:12px;display:flex;flex-direction:column;gap:10px}
+.mode-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;align-items:start}
+select,input[type=number]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px;width:100%;min-width:0}
+select{font-weight:600} input:disabled{opacity:.45}
+.notice{margin:0;padding:8px 12px;border-left:3px solid var(--accent);font-size:12px;color:var(--muted);background:var(--panel)}
+.mode-status{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.theory{padding:16px}.theory h2{font-family:var(--display);margin:0 0 6px;font-size:21px}.theory p{margin:8px 0}
+.theory-intro{color:var(--muted);max-width:75ch}
+.theory-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.theory-card{border:1px solid var(--line);border-radius:5px;padding:14px;min-width:0}
+.theory-card h3{margin:0;font-size:14px;color:var(--accent)}
+.formula{display:block;background:var(--bg);border-radius:4px;padding:10px;margin:10px 0;font-family:var(--mono);font-size:13px;overflow-wrap:anywhere}
+.fraction{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.4;margin:0 4px}.fraction>span:first-child{border-bottom:1px solid currentColor;padding:0 5px 3px}.fraction>span:last-child{padding:3px 5px 0}
+.theory details{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.theory summary{font-weight:600;cursor:pointer}.theory summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+#chart{cursor:crosshair}#chart:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.chart-instruction{margin:0;padding:9px 12px;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line)}
+.point-reader{padding:12px;border-top:1px solid var(--line)}
+.point-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.point-heading h3{font-size:14px;margin:0}.point-heading p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.point-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0 0}
+.point-grid>div{min-width:0;padding:9px 10px;background:var(--bg);border-radius:4px}
+.point-grid dt{font-size:12px;color:var(--muted);margin-bottom:4px}.point-grid dd{margin:0;font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#pointX{color:var(--x)}#pointF{color:var(--accent)}#pointA{color:var(--a)}
+@media(max-width:760px){.theory-cards{grid-template-columns:1fr}.point-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#stepSummary{border-top:1px solid var(--line);padding-top:8px;font-size:13px}
+#modeNote{margin:0;font-size:12px;color:var(--muted)}
+@media(max-width:760px){.mode-grid{grid-template-columns:1fr}.eq{width:100%;overflow-wrap:anywhere}.d span{font-size:13px}}
+.rig-workspace{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:14px;align-items:start}
+.rig-column{display:flex;flex-direction:column;gap:14px;min-width:0}#graphDock{min-width:0}
+.rig-column #rig{height:280px}
+.graph-panel{min-width:0;overflow:hidden}
+.graph-panel .chart-head .legend{flex-basis:100%;gap:8px 12px}
+.graph-actions{display:flex;gap:8px;align-items:center}.graph-play{display:none}
+.graph-panel #chart{height:330px}
+.graph-panel .point-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#graphDialog{width:min(1400px,96vw);max-width:96vw;max-height:94dvh;margin:auto;padding:0;border:0;border-radius:8px;background:var(--panel);color:var(--ink);overflow:auto}
+#graphDialog::backdrop{background:rgba(5,12,20,.65)}
+#graphDialog .graph-play{display:inline-block}
+#graphDialog #chart{height:clamp(260px,calc(100dvh - 360px),650px)}
+#graphDialog .point-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+body.graphs-open{overflow:hidden}
+@media(max-width:760px){.rig-workspace{grid-template-columns:1fr}.rig-column #rig{height:210px}.graph-panel #chart{height:330px}#graphDialog .point-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.reference>summary,.lab-details>summary{padding:12px 14px;cursor:pointer;font-weight:600}.reference #stepSummary{padding:10px 14px;margin:0}.reference .derived{border-top:1px solid var(--line)}
+.lab-details{border-bottom:1px solid var(--line)}.lab-details>p,.lab-details>.formula,.lab-details>.sweep-buttons,.lab-details>.sweep-controls{margin:10px 14px}.lab-note{padding:0 14px;font-size:12px;color:var(--muted)}
+.sweep-buttons{display:flex;gap:8px;flex-wrap:wrap}.sweep-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.sweep-controls .ctl{max-width:240px}.measurement-status{color:var(--muted);font-size:13px;min-height:38px}
+button:disabled{opacity:.5;cursor:default}.graph-actions select{width:auto;max-width:125px;padding:6px;font-size:12px}.graph-actions{flex-wrap:wrap}
+.table-scroll{overflow:auto;margin:14px}table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}th,td{padding:8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}th{background:var(--bg)}caption{text-align:left;padding:6px 0;color:var(--muted)}
+.sweep-plots{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px}.sweep-plots svg{display:block;width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--ink)}
+@media(max-width:760px){.sweep-plots{grid-template-columns:1fr}.graph-actions{gap:6px}.graph-actions button{padding:6px 8px}}
+.friction-panel{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-top:10px;border-top:1px solid var(--line)}
+.friction-toggle{display:flex;align-items:center;gap:9px;font-weight:600;cursor:pointer}.friction-toggle input{accent-color:var(--accent);width:19px;height:19px;margin:0}
+.friction-panel .ctl{width:240px;max-width:100%}.friction-panel p{margin:0;flex:1 1 280px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Spring Cart Rig</h1>
+      <p class="sub">MSE 281 Lab 2 teaching aid. Compare free vibration, a constant force switched on at a set time, and a sinusoidal motor moving the left spring anchor.</p>
+    </div>
+    <div class="eq" id="equation">m·ẍ + c·ẋ + (k₁+k₂)x = k₁A·sin(ωt)</div>
+  </header>
+
+  <p class="notice"><strong>TA reference · Idealized theoretical simulation.</strong> These curves are generated by a model; they are not actual OSCAR data. Presets are illustrative, not calibrated rig values or official lab settings.</p>
+  <section class="panel mode-panel" aria-label="Input mode and step settings">
+    <div class="mode-grid">
+      <div class="ctl"><label for="inputMode">Input mode</label><select id="inputMode"><option value="free">Free vibration · F = 0</option><option value="step">Step force · F₀ H(t − tₛ)</option><option value="sinusoidal" selected>Sinusoidal excitation</option></select></div>
+      <div class="ctl" id="forceControl" hidden><label for="stepForce">Step force F₀ (N)</label><input id="stepForce" type="number" min="-20" max="20" step="0.1" value="4"><span class="note">−20 to +20 N; positive pushes right.</span></div>
+      <div class="ctl" id="timeControl" hidden><label for="stepTime">Step onset tₛ (s)</label><input id="stepTime" type="number" min="0" max="10" step="0.1" value="1"><span class="note">Simulation seconds after Reset (0–10 s).</span></div>
+    </div>
+    <div id="sineSettings" class="mode-grid">
+      <div class="ctl"><label for="excitation">Sinusoidal model</label><select id="excitation"><option value="anchor">Original moving anchor · k₁yₘ</option><option value="force">Case A · direct sinusoidal force</option><option value="caseC">Case C · motor/cable coupling</option></select></div>
+      <p class="hint">Part A uses a direct force step. Part B can use direct force (X/F) or Case C motor displacement (X/Yₘ). All results are simulated; none use PWM counts.</p>
+    </div>
+    <p id="modeNote"></p>
+    <div class="friction-panel">
+      <label class="friction-toggle" for="frictionOn"><input id="frictionOn" type="checkbox" role="switch"> Dry friction</label>
+      <div class="ctl"><label for="frictionN">Friction strength F<sub>c</sub> <output id="frictionN_o"></output></label><input id="frictionN" type="range" min="0" max="5" step="0.05" value="0.25" disabled></div>
+      <p id="frictionNote" class="hint" role="status">Off · viscous damping c still applies.</p>
+    </div>
+    <div class="mode-status" id="inputStatus" role="status" aria-live="polite"></div>
+
+  </section>
+  <div class="rig-workspace">
+    <div class="rig-column">
+  <section class="panel rig">
+    <canvas id="rig" aria-label="Animated spring cart; draggable in free and sinusoidal modes"></canvas>
+    <div class="rig-bar">
+      <button id="play" class="primary" type="button">Pause</button>
+      <button id="reset" type="button">Reset &amp; pause</button>
+      <button id="exportRun" type="button">Export run CSV</button>
+      <span class="spacer"></span>
+      <span class="hint" id="hint">Bump stops at ±250 mm</span>
+      <span class="clock" id="clock">t = 0.00 s</span>
+    </div>
+  </section>
+  <p class="hint" id="logStatus"></p>
+    </div>
+    <div id="graphDock">
+  <section class="panel graph-panel" id="graphPanel" aria-labelledby="chartTitle">
+    <div class="chart-head">
+      <h2 id="chartTitle">Response graphs</h2>
+      <div class="graph-actions"><label class="hint" for="plotWindow">View</label><select id="plotWindow" aria-label="Graph time window"><option value="10">Last 10 s</option><option value="5">Last 5 s</option><option value="2">Last 2 s</option><option value="1">Last 1 s</option><option value="0.5">Last 0.5 s</option><option value="0">Full run</option></select><button id="graphPlay" class="graph-play" type="button">Pause</button><button id="expandGraphs" type="button" aria-haspopup="dialog" aria-controls="graphDialog" aria-expanded="false">Expand graphs ↗</button></div>
+      <div class="legend">
+        <span><i style="background:var(--x)"></i>x (mm)</span>
+        <span id="motorLegend"><i style="background:var(--muted)"></i>yₘ (mm, dashed)</span>
+        <span id="staticLegend" hidden><i style="background:var(--muted)"></i>x static (mm, dashed)</span>
+        <span><i style="background:var(--accent)"></i>applied F (N)</span>
+        <span><i style="background:var(--a)"></i>a (m/s²)</span>
+      </div>
+    </div>
+    <p class="chart-instruction" id="chartHelp">Click a graph to expand it and inspect a point, or use Expand graphs for a larger live view.</p>
+    <canvas id="chart" tabindex="0" role="img" aria-describedby="chartHelp" aria-label="Interactive response graphs. Click to inspect a recorded sample, or use the Left and Right arrow keys. Home selects the first point; End selects the latest point; Escape closes the expanded view, or clears the selection in the compact view."></canvas>
+    <div class="point-reader" id="pointReader" hidden>
+      <div class="point-heading">
+        <div><h3>Selected point · simulation paused</h3><p id="pointContext" role="status" aria-live="polite"></p></div>
+        <button id="clearPoint" type="button">Clear selection</button>
+      </div>
+      <dl class="point-grid">
+        <div><dt>Time t</dt><dd id="pointT"></dd></div>
+        <div><dt>Displacement x</dt><dd id="pointX"></dd></div>
+        <div><dt>Applied force F</dt><dd id="pointF"></dd></div>
+        <div><dt>Acceleration a</dt><dd id="pointA"></dd></div>
+        <div id="pointMotor"><dt>Motor-side yₘ</dt><dd id="pointU"></dd></div>
+      </dl>
+    </div>
+  </section>
+    </div>
+  </div>
+
+  <details class="panel reference"><summary>Check theoretical values after your calculations</summary>
+  <section class="derived">
+    <div class="d"><b>Natural freq.</b><span id="dfn">–</span></div>
+    <div class="d"><b>Drive freq.</b><span id="dfd">–</span></div>
+    <div class="d" id="dratioBox"><b>Ratio ω/ωₙ</b><span id="dratio">–</span></div>
+    <div class="d"><b>Damping ratio ζ</b><span id="dzeta">–</span></div>
+    <div class="d" id="dampBox"><b id="dampLabel">Steady amplitude</b><span id="damp">–</span></div>
+  </section>
+  <p id="stepSummary" hidden></p>
+  </details>
+
+
+  <section class="panel">
+    <div class="ctl-head">
+      <h2>Parameters</h2>
+      <div class="presets">
+        <button type="button" data-preset="step">Step response</button>
+        <button type="button" data-preset="force">Force sweep</button>
+        <button type="button" data-preset="caseC">Case C sweep</button>
+        <button type="button" data-preset="below">Below resonance</button>
+        <button type="button" data-preset="res">At resonance</button>
+        <button type="button" data-preset="above">Above resonance</button>
+        <button type="button" data-preset="free">Free vibration</button>
+        <button type="button" data-preset="heavy">Heavy damping</button>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="group">
+        <h3>Cart &amp; springs</h3>
+        <div class="ctl"><label for="m">Cart mass m <output id="m_o"></output></label><input type="range" id="m" min="0.1" max="5" step="0.05" value="1"></div>
+        <div class="ctl"><label for="k1"><span id="k1Label">Left spring k₁</span> <output id="k1_o"></output></label><input type="range" id="k1" min="1" max="300" step="1" value="40"></div>
+        <div class="ctl"><label for="k2"><span id="k2Label">Right spring k₂</span> <output id="k2_o"></output></label><input type="range" id="k2" min="1" max="300" step="1" value="40"></div>
+        <div class="ctl"><label for="c"><span id="cLabel">Damping c</span> <output id="c_o"></output></label><input type="range" id="c" min="0" max="20" step="0.1" value="0.8"></div>
+      </div>
+      <div class="group">
+        <h3>Motor &amp; playback</h3>
+        <span class="hint">Anchor amplitude applies to moving-anchor/Case C modes; force amplitude applies to direct-force mode.</span>
+        <div class="ctl"><label for="forceAmp">Sine force Fₐ <output id="forceAmp_o"></output></label><input type="range" id="forceAmp" min="0" max="20" step="0.05" value="1"></div>
+        <div class="ctl"><label for="cm">Coupling damping cₘ <output id="cm_o"></output></label><input type="range" id="cm" min="0" max="20" step="0.1" value="1.2"></div>
+        <div class="ctl"><label for="A">Stroke amplitude A <output id="A_o"></output></label><input type="range" id="A" min="0" max="100" step="1" value="30"></div>
+        <div class="ctl"><label for="rpm">Motor speed <output id="rpm_o"></output></label><input type="range" id="rpm" min="0" max="480" step="1" value="60"><span class="note" id="rpm_note"></span></div>
+        <div class="ctl"><label for="speed">Playback speed <output id="speed_o"></output></label><input type="range" id="speed" min="0.1" max="2" step="0.05" value="1"><span class="note">Slows or speeds the clock. Physics stays the same.</span></div>
+      </div>
+      <div class="group">
+        <h3>Start conditions</h3>
+        <div class="ctl"><label for="x0">Initial displacement x₀ <output id="x0_o"></output></label><input type="range" id="x0" min="-250" max="250" step="5" value="0"></div>
+        <div class="ctl"><label for="v0">Initial velocity v₀ <output id="v0_o"></output></label><input type="range" id="v0" min="-2" max="2" step="0.05" value="0"></div>
+        <div class="ctl"><label for="rest">Bump-stop restitution <output id="rest_o"></output></label><input type="range" id="rest" min="0" max="1" step="0.05" value="0.4"></div>
+        <span class="hint">x₀ and v₀ take effect on Reset. Step tests normally use x₀ = v₀ = 0. Bump-stop restitution applies only in free and sinusoidal modes.</span>
+      </div>
+    </div>
+  </section>
+  <section class="panel lab-workbench" aria-label="Simulation lab measurements">
+    <div class="ctl-head"><h2>Lab measurements · simulated data</h2><span class="hint">1,000 samples/s · Export before Reset</span></div>
+    <details class="lab-details"><summary>Part A · calculate a step response</summary>
+      <p>Run <strong>Step response</strong> twice and export each run before Reset. Use the full-run graph and point readings to record x<sub>initial</sub>, x<sub>final</sub>, x<sub>peak</sub>, corresponding peak times, rise time, and settling behaviour. State your rise-time and settling-band definitions.</p>
+      <div class="formula">PO = 100 |x<sub>peak</sub> − x<sub>final</sub>| / |x<sub>final</sub> − x<sub>initial</sub>|<br>ζ₁ = −ln(PO/100) / √[π² + ln²(PO/100)]<br>T<sub>d</sub> = t<sub>next peak</sub> − t<sub>peak</sub>; ω<sub>d1</sub> = 2π/T<sub>d</sub>; ω<sub>n1</sub> = ω<sub>d1</sub>/√(1 − ζ₁²)</div>
+      <p>Use these identification formulas only for a valid underdamped prototype step from rest. Without overshoot, omit ζ₁ from PO; without successive peaks, omit ω<sub>n1</sub> from a peak period. With zero damping there is no settled final value: label F₀/(k₁+k₂) as the theoretical equilibrium instead.</p>
+    </details>
+    <details class="lab-details" id="sweepWorkbench"><summary>Part B · frequency sweep and magnitude/phase plots</summary>
+      <p>Choose <strong>Force sweep</strong> for X/Fₐ (mm/N), or <strong>Case C sweep</strong> for X/Yₘ (mm/mm). Keep mass, springs, damping, model, and input amplitude unchanged for one table. Coarse buttons set frequency and restart the run; use fine points around a repeatable interior peak. Do not invent a peak.</p>
+      <div class="sweep-buttons" aria-label="Coarse frequency settings"><button type="button" data-freq="1">1 Hz</button><button type="button" data-freq="2">2 Hz</button><button type="button" data-freq="3">3 Hz</button><button type="button" data-freq="4">4 Hz</button><button type="button" data-freq="5">5 Hz</button><button type="button" data-freq="6">6 Hz</button></div>
+      <div class="sweep-controls"><div class="ctl"><label for="fineFrequency">Fine frequency (Hz)</label><input id="fineFrequency" type="number" min="0.25" max="8" step="0.25" value="1.25"></div><button id="setFrequency" type="button">Set frequency &amp; run</button><div class="ctl"><label for="discardTime">Discard first (s after setup change)</label><input id="discardTime" type="number" min="0" max="120" step="0.5" value="5"></div></div>
+      <p id="sweepStatus" class="measurement-status" role="status"></p>
+      <div class="sweep-buttons"><button id="captureSweep" type="button">Measure last 5 cycles</button><button id="exportSweep" type="button" disabled>Export sweep CSV</button><button id="clearSweep" type="button">Clear table</button></div>
+      <p class="hint">X uses (x<sub>max</sub> − x<sub>min</sub>)/2. Phase uses sine/cosine fits relative to force (Case A) or yₘ (moving anchor/Case C). Signed Δt = −phase/(360f); positive Δt is lag. Capture checks waveform stability and rejects contact or hand-dragging records. Values are calculated from recorded samples, not copied from the theoretical transfer function.</p>
+      <div class="table-scroll"><table id="sweepTable"><caption id="sweepCaption">No sweep measurements yet.</caption><thead><tr><th>f (Hz)</th><th>Input amplitude</th><th>x min (mm)</th><th>x max (mm)</th><th>X (mm)</th><th id="gainHeading">Gain</th><th>Δt (s)</th><th>Phase (°)</th></tr></thead><tbody id="sweepBody"></tbody></table></div>
+      <div class="sweep-plots"><svg id="gainPlot" viewBox="0 0 600 290" role="img" aria-label="Measured simulated magnitude versus frequency"></svg><svg id="phasePlot" viewBox="0 0 600 290" role="img" aria-label="Measured simulated phase versus frequency"></svg></div>
+      <p class="hint">Points are joined only to show the measured trend. Phase is unwrapped in ascending frequency order; sparse frequency spacing can leave phase ambiguous. Repeat or add fine points when needed.</p>
+    </details>
+    <details class="lab-details"><summary>Case C · connect the derivation to the simulation</summary>
+      <div class="formula">m·ẍ + (c₀+cₘ)·ẋ + (k₀+kₘ)x = kₘyₘ + cₘẏₘ<br>yₘ = Yₘ sin(ωt); ẏₘ = ωYₘ cos(ωt)</div>
+      <p>In Case C mode, the left spring control is kₘ, the right spring is k₀, and c is c₀. Assume x<sub>p</sub> = a sin(ωt) + b cos(ωt), differentiate, and match the sine and cosine coefficients to derive the two equations in Section 5 of the manual.</p>
+      <div class="formula">X/Yₘ = √[kₘ² + (cₘω)²] / √[(k₀+kₘ−mω²)² + ((c₀+cₘ)ω)²]<br>φ = atan2(cₘω,kₘ) − atan2((c₀+cₘ)ω,k₀+kₘ−mω²)</div>
+      <p>Compare the derivation with your sampled Case C sweep. The orange plot is the equivalent force; its phase differs from yₘ when cₘ ≠ 0. The dashed yₘ trace and sweep phase use motor displacement as the reference.</p>
+    </details>
+    <p class="lab-note">Simulation adaptation of Lab 2: Part 0 is omitted. Replace PWM-to-displacement results with the selected physical input above. Record simulated trials and discuss model limitations; do not claim observed OSCAR calibration, friction, noise, or apparatus-specific behaviour.</p>
+  </section>
+  <section class="panel theory" aria-label="Theory and run instructions">
+    <h2>Reading a step response</h2>
+    <p class="theory-intro">The three steps below assume dry friction is off. Read the input and the cart motion together: the force jumps, but the cart takes time to respond. Click a graph to compare quantities at the same instant.</p>
+    <div class="theory-cards">
+      <article class="theory-card">
+        <h3>1 · Find when the force turns on</h3>
+        <p>Before the step time t<sub>s</sub>, the force is zero. At t<sub>s</sub>, it switches to F₀ and stays there.</p>
+        <div class="formula">F(t) = 0 before t<sub>s</sub><br>F(t) = F₀ from t<sub>s</sub> onward</div>
+        <p>Look for the vertical marker and the jump in the orange force trace. Displacement and velocity stay continuous; acceleration changes immediately by F₀/m.</p>
+      </article>
+      <article class="theory-card">
+        <h3>2 · Predict the final position</h3>
+        <p>Both springs oppose cart motion, so their stiffnesses add. At rest, the springs balance the applied force.</p>
+        <div class="formula" aria-label="Static displacement equals step force divided by the sum of the two spring stiffnesses">x<sub>static</sub> = <span class="fraction"><span>F₀</span><span>k₁ + k₂</span></span></div>
+        <p><strong>Step preset example:</strong> 4 N ÷ 80 N/m = 0.050 m = <strong>50 mm</strong>. The dashed line shows this equilibrium.</p>
+        <p>With damping, motion settles here. With zero damping, the cart keeps oscillating about it.</p>
+      </article>
+      <article class="theory-card">
+        <h3>3 · Compare the peak and settling</h3>
+        <p>For a nonzero step starting from rest at x = 0:</p>
+        <p><strong>0 ≤ ζ &lt; 1:</strong> the response overshoots. More damping reduces the overshoot; ζ = 0 never settles.</p>
+        <p><strong>ζ = 1:</strong> critical damping, with no overshoot.</p>
+        <p><strong>ζ &gt; 1:</strong> overdamping, with no overshoot and a slower approach than critical damping at the same mass and stiffness.</p>
+        <p class="hint">Nonzero initial displacement or velocity adds a free response and can change the peak.</p>
+      </article>
+    </div>
+    <details><summary>Dry friction and sticking</summary>
+      <p>Dry friction acts in addition to viscous damping. While sliding, its force is −F<sub>c</sub> sign(v). At rest it balances the residual drive F − kx, up to ±F<sub>c</sub>; motion starts only when that limit is exceeded. Static and sliding friction use the same adjustable force limit in this idealized model.</p>
+      <p>A small step can leave the cart stuck. Free oscillations can stop at a nonzero displacement, and a sinusoidal input can produce stick–slip motion. These are illustrative effects, not calibrated OSCAR friction measurements. The frictionless equilibrium line and linear reference equations do not predict the full frictional response. Use friction off for the standard identification and frequency-sweep calculations.</p>
+    </details>
+    <details>
+      <summary>Equations and modelling assumptions</summary>
+      <div class="formula">m·ẍ + c·ẋ + (k₁ + k₂)x = F(t)</div>
+      <p>x is measured from the unforced equilibrium. In step mode both anchors stay fixed. Free vibration uses F = 0. Original moving-anchor mode uses yₘ = A sin(ωt) and F = k₁yₘ. Direct-force mode uses F = Fₐ sin(ωt). Case C adds coupling damping: F = kₘyₘ + cₘẏₘ and total damping c₀+cₘ. A is converted from mm to m.</p>
+      <div class="formula">ωₙ = √[(k₁ + k₂)/m]<br>ζ = c / [2√(m(k₁ + k₂))]</div>
+      <p>For a nonzero step from zero initial displacement and velocity, the percentage overshoot is:</p>
+      <div class="formula">Overshoot (%) = 100 exp[−πζ / √(1 − ζ²)]<br><span class="hint">Applies for 0 ≤ ζ &lt; 1; zero overshoot for ζ ≥ 1 under these initial conditions.</span></div>
+      <p>Step mode disables contacts and cart dragging to preserve the linear equation. Its picture is limited to ±250 mm, while graphs and selected points retain the full calculated motion. Free and sinusoidal modes retain the original bump stops and dragging.</p>
+    </details>
+    <details>
+      <summary>Reset, timing, and graph controls</summary>
+      <p><strong>Reset &amp; pause</strong> clears the recorder, sets time and motor phase to zero, and reloads x₀ and v₀. Play resumes; Pause freezes the clock and input. A step with t<sub>s</sub> = 0 is already on at Reset.</p>
+      <p>Changing mode or step force/onset resets and pauses. Other parameter sliders change the model immediately and start a new logged setup segment, so reset between comparisons and export before Reset. Presets reset and start their runs. Step force stays constant after onset until settings or mode change.</p>
+      <p>Click or tap a compact graph to expand it, pause, and select the nearest recorded time. Expand graphs opens a larger live view; its Play/Pause button controls the run. The vertical cursor and coloured dots link the three lanes; numerical values appear below. ← and → move one recorded point, Home/End jump to the first/latest point, and Escape closes the expanded view (or clears the selection in the compact view). Clear selection leaves the run paused; Play clears it and resumes.</p>
+      <p>Each lane has its own units and scale. The default view shows the last 10 simulation seconds. Choose a shorter window for high-frequency point readings or Full run to revisit the initial response. All samples from the current run are retained for CSV export; Reset begins a new run. Use Close expanded view to return the graphs beside the cart. At step onset, two samples show the values immediately before and after the switch; use the arrow keys to inspect both.</p>
+    </details>
+    <p class="hint">TA reference · Idealized theoretical simulation, not actual OSCAR data. Theory follows the supplied second-order notes and revised MSE 281 Lab 2 manual (Fall 2026). The optional dry-friction switch models Coulomb friction and sticking with equal static/sliding limits. Actuator and sensor dynamics, noise, and calibration effects are omitted.</p>
+  </section>
+</div>
+<dialog id="graphDialog" aria-labelledby="chartTitle"></dialog>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const P={stepForce:4,stepTime:1,frictionOn:false};
+const fmt={frictionN:v=>v.toFixed(2)+' N',m:v=>v.toFixed(2)+' kg',k1:v=>v.toFixed(0)+' N/m',k2:v=>v.toFixed(0)+' N/m',c:v=>v.toFixed(1)+' N·s/m',cm:v=>v.toFixed(1)+' N·s/m',forceAmp:v=>v.toFixed(2)+' N',A:v=>v.toFixed(0)+' mm',rpm:v=>v.toFixed(0)+' rpm',speed:v=>v.toFixed(2)+'×',x0:v=>(v>0?'+':'')+v.toFixed(0)+' mm',v0:v=>(v>0?'+':'')+v.toFixed(2)+' m/s',rest:v=>v.toFixed(2)};
+const ids=Object.keys(fmt),STOP=.25,SR=1000;
+let S={x:0,v:0,th:0,t:0},running=!matchMedia('(prefers-reduced-motion: reduce)').matches,mode='sinusoidal',excitation='anchor',dragging=false,bumpFlash=0;
+const hist=[],runLog=[],sweepRows=[];
+let selectedPoint=null,WIN=10,nextSample=1,runNumber=0,contactCount=0,segment=null,segmentNumber=0,runX0=0,runV0=0,analysisCache=null;
+function effectiveC(){return P.c+(mode==='sinusoidal'&&excitation==='caseC'?P.cm:0)}
+function omega(){return mode==='sinusoidal'?P.rpm*2*Math.PI/60:0}
+function movingAnchor(){return mode==='sinusoidal'&&excitation!=='force'}
+function u(th){return movingAnchor()?P.A/1000*Math.sin(th):0}
+function udot(th){return movingAnchor()?P.A/1000*omega()*Math.cos(th):0}
+function inputForce(t,th){
+  if(mode==='step')return t>=P.stepTime?P.stepForce:0;
+  if(mode==='free')return 0;
+  return excitation==='force'?P.forceAmp*Math.sin(th):P.k1*u(th)+(excitation==='caseC'?P.cm*udot(th):0);
+}
+function dryFriction(){return P.frictionOn?P.frictionN:0}
+// Equal static and sliding Coulomb limits. At rest the friction force balances
+// the residual drive up to Fc; sliding friction opposes cart velocity.
+function frictionForce(x,v,f){
+  const Fc=dryFriction();if(!Fc)return 0;
+  const drive=f-(P.k1+P.k2)*x;
+  return Math.abs(v)<=1e-12&&Math.abs(drive)<=Fc?-drive:-Fc*Math.sign(Math.abs(v)>1e-12?v:drive);
+}
+function acceleration(x,v,f){return (f-(P.k1+P.k2)*x-effectiveC()*v+frictionForce(x,v,f))/P.m}
+function acc(x,v,th,t=S.t){return acceleration(x,v,inputForce(t,th))}
+function referenceInfo(){return movingAnchor()?{kind:'motor_displacement',unit:'m',gainUnit:'mm/mm'}:{kind:'force',unit:'N',gainUnit:'mm/N'}}
+function configuration(){return {mode,excitation,m:P.m,k1:P.k1,k2:P.k2,c:P.c,cm:mode==='sinusoidal'&&excitation==='caseC'?P.cm:0,A:P.A/1000,forceAmp:P.forceAmp,rpm:P.rpm,stepForce:P.stepForce,stepTime:P.stepTime,rest:P.rest,frictionOn:P.frictionOn,frictionN:P.frictionN,x0:runX0,v0:runV0}}
+function ensureSegment(){
+  const config=configuration(),key=JSON.stringify(config);
+  if(!segment||segment.key!==key){segment={id:++segmentNumber,key,config,start:S.t,dragged:false};analysisCache=null;}
+  return segment;
+}
+function readParams(){
+  ids.forEach(id=>{P[id]=Number($(id).value);$(id+'_o').textContent=fmt[id](P[id]);});
+  $('rpm_note').textContent=(P.rpm/60).toFixed(3)+' Hz · ω = '+(P.rpm*2*Math.PI/60).toFixed(3)+' rad/s';
+  if(segment)ensureSegment();updateDerived();
+}
+ids.forEach(id=>$(id).addEventListener('input',readParams));
+// RK4 on smooth sliding intervals. Velocity-zero and breakaway events are
+// resolved separately so Coulomb friction cannot create numerical chatter.
+function step(h){
+  const w=omega(),Fc=dryFriction(),constantStepForce=mode==='step'?inputForce(S.t+h/2,S.th):null;
+  const applied=(time,phase)=>constantStepForce===null?inputForce(time,phase):constantStepForce;
+  function rk(state,dt,direction){
+    const {x,v,th,t}=state;
+    const a=(xx,vv,phase,time)=>(applied(time,phase)-(P.k1+P.k2)*xx-effectiveC()*vv-Fc*direction)/P.m;
+    const k1x=v,k1v=a(x,v,th,t),k2x=v+k1v*dt/2,k2v=a(x+k1x*dt/2,v+k1v*dt/2,th+w*dt/2,t+dt/2);
+    const k3x=v+k2v*dt/2,k3v=a(x+k2x*dt/2,v+k2v*dt/2,th+w*dt/2,t+dt/2),k4x=v+k3v*dt,k4v=a(x+k3x*dt,v+k3v*dt,th+w*dt,t+dt);
+    return {x:x+dt/6*(k1x+2*k2x+2*k3x+k4x),v:v+dt/6*(k1v+2*k2v+2*k3v+k4v),th:th+w*dt,t:t+dt};
+  }
+  function breakaway(state,dt){
+    const drive=tau=>applied(state.t+tau,state.th+w*tau)-(P.k1+P.k2)*state.x;
+    if(Math.abs(drive(0))>Fc)return 0;
+    const cuts=[0,dt];
+    if(mode==='sinusoidal'&&w>0){
+      const R=movingAnchor()?P.k1*P.A/1000:P.forceAmp,T=movingAnchor()&&excitation==='caseC'?P.cm*w*P.A/1000:0,phase=state.th+Math.atan2(T,R);
+      const n=Math.floor((phase-Math.PI/2)/Math.PI)+1,tau=(Math.PI/2+n*Math.PI-phase)/w;
+      if(tau>0&&tau<dt)cuts.push(tau);
+    }
+    cuts.sort((a,b)=>a-b);
+    for(let i=1;i<cuts.length;i++)if(Math.abs(drive(cuts[i]))>Fc){
+      let lo=cuts[i-1],hi=cuts[i];for(let j=0;j<45;j++){const mid=(lo+hi)/2;if(Math.abs(drive(mid))>Fc)hi=mid;else lo=mid;}return hi;
+    }
+    return null;
+  }
+  if(!Fc)S=rk(S,h,0);
+  else{
+    const end=S.t+h;let remaining=h;
+    while(remaining>1e-13){
+      if(Math.abs(S.v)<=1e-12){
+        S.v=0;const onset=breakaway(S,remaining);
+        if(onset===null){S.th+=w*remaining;S.t=end;remaining=0;break;}
+        S.th+=w*onset;S.t+=onset;remaining-=onset;
+      }
+      const direction=Math.sign(S.v)||Math.sign(applied(S.t,S.th)-(P.k1+P.k2)*S.x);
+      const trial=rk(S,remaining,direction);
+      if(trial.v*direction>=0){S=trial;remaining=0;}
+      else{
+        let lo=0,hi=remaining;
+        for(let i=0;i<45;i++){const mid=(lo+hi)/2;if(rk(S,mid,direction).v*direction>0)lo=mid;else hi=mid;}
+        const stop=(lo+hi)/2;S=rk(S,stop,direction);S.v=0;remaining-=stop;
+      }
+    }
+    // Preserve the requested integration interval despite tiny event roundoff.
+    S.th+=w*(end-S.t);S.t=end;
+  }
+  if(mode!=='step'){
+    if(S.x>STOP){S.x=STOP;if(S.v>0){S.v=-P.rest*S.v;bumpFlash=1;contactCount++;}}
+    if(S.x<-STOP){S.x=-STOP;if(S.v<0){S.v=-P.rest*S.v;bumpFlash=1;contactCount++;}}
+  }
+}
+function advance(dt){
+  ensureSegment();let remaining=dt;
+  while(remaining>1e-12){
+    const sampleTime=nextSample/SR;
+    let h=Math.min(.0005,remaining,Math.max(0,sampleTime-S.t));
+    if(h<1e-12){S.t=sampleTime;record();nextSample++;continue;}
+    const hitsStep=mode==='step'&&S.t<P.stepTime&&S.t+h>=P.stepTime-1e-12;
+    if(hitsStep)h=P.stepTime-S.t;
+    if(dragging){segment.dragged=true;S.th+=omega()*h;S.t+=h;S.v=0;}else step(h);
+    remaining-=h;
+    if(hitsStep){S.t=P.stepTime;record(0);record(P.stepForce);}
+    if(S.t>=sampleTime-1e-12){S.t=sampleTime;record();nextSample++;}
+  }
+}
+function record(force=inputForce(S.t,S.th)){
+  ensureSegment();const q={t:S.t,x:S.x,v:S.v,a:dragging?0:acceleration(S.x,S.v,force),u:u(S.th),udot:udot(S.th),f:force,th:S.th,segment,contactCount,dragging,friction:frictionForce(S.x,S.v,force),sticking:!dragging&&dryFriction()>0&&Math.abs(S.v)<=1e-12&&Math.abs(force-(P.k1+P.k2)*S.x)<=dryFriction()};
+  runLog.push(q);hist.push(q);
+  while(hist.length&&hist[0].t<S.t-10)hist.shift();
+}
+function reset(){
+  clearPoint();dragging=false;bumpFlash=0;contactCount=0;runNumber++;
+  runX0=P.x0/1000;runV0=P.v0;S={x:runX0,v:runV0,th:0,t:0};hist.length=0;runLog.length=0;nextSample=1;segment=null;segmentNumber=0;analysisCache=null;record();
+  rig.style.cursor=mode==='step'?'default':'grab';
+}
+function resetAndPause(){reset();running=false;$('play').textContent='Play';updateReadouts();}
+function syncMode(){
+  const isStep=mode==='step',isMotor=mode==='sinusoidal',base=movingAnchor(),coupled=isMotor&&excitation==='caseC';
+  ['forceControl','timeControl','stepSummary','staticLegend'].forEach(id=>$(id).hidden=!isStep);
+  $('motorLegend').hidden=!base;$('sineSettings').hidden=!isMotor;
+  $('A').disabled=!base;$('rpm').disabled=!isMotor;$('cm').disabled=!coupled;$('forceAmp').disabled=!isMotor||excitation!=='force';$('rest').disabled=isStep;
+  $('k1Label').textContent=coupled?'Coupling stiffness kₘ':'Left spring k₁';$('k2Label').textContent=coupled?'Frame stiffness k₀':'Right spring k₂';$('cLabel').textContent=coupled?'Frame damping c₀':'Damping c';
+  rig.style.cursor=isStep?'default':'grab';
+  $('equation').textContent=coupled?'m·ẍ + (c₀+cₘ)·ẋ + (k₀+kₘ)x = kₘyₘ + cₘẏₘ':'m·ẍ + c·ẋ + (k₁+k₂)x = '+(isStep?'F₀ H(t − tₛ)':isMotor?(base?'k₁A·sin(ωt)':'Fₐ·sin(ωt)'):'0');
+  $('modeNote').textContent=isStep?'Direct force step: fixed anchors, no contacts or dragging. Changing force/onset resets and pauses. Export the run before Reset.':
+    mode==='free'?'Free vibration: input zero. Drag the cart to displace it; ±250 mm bump stops are active.':
+    coupled?'Case C: yₘ = A sin(ωt). The input force includes kₘyₘ and cₘẏₘ. Sweep gain and phase use yₘ as the reference, not the equivalent force.':
+    base?'Original moving-anchor mode: yₘ = A sin(ωt), equivalent force k₁yₘ. Sweep gain is X/Yₘ (mm/mm).':'Case A direct force: F = Fₐ sin(ωt). Sweep gain is X/Fₐ (mm/N), with phase relative to force. No PWM calibration is implied.';
+  syncFriction();updateDerived();
+}
+function syncFriction(){
+  $('staticLegend').innerHTML='<i style="background:var(--muted)"></i>'+(dryFriction()?'frictionless F₀/k (mm, dashed)':'x static (mm, dashed)');
+  $('frictionN').disabled=!P.frictionOn;
+  $('frictionNote').textContent=P.frictionOn?'On · static/sliding limit '+P.frictionN.toFixed(2)+' N. Changing friction resets and pauses. Linear identification and sweep checks require friction off.':'Off · viscous damping c still applies. Changing friction resets and pauses.';
+  if(dryFriction())$('equation').textContent+=' + Ffriction (on the right)';
+}
+function theoryResponse(){
+  const w=omega(),k=P.k1+P.k2,c=effectiveC(),R=movingAnchor()?P.k1*P.A/1000:P.forceAmp,T=movingAnchor()&&excitation==='caseC'?P.cm*w*P.A/1000:0;
+  return {amplitude:w===0?0:Math.hypot(R,T)/Math.hypot(k-P.m*w*w,c*w),phase:Math.atan2(T,R)-Math.atan2(c*w,k-P.m*w*w)};
+}
+function updateDerived(){
+  const k=P.k1+P.k2,wn=Math.sqrt(k/P.m),w=omega(),zeta=effectiveC()/(2*Math.sqrt(k*P.m));
+  $('dfn').textContent=(wn/2/Math.PI).toFixed(3)+' Hz · '+wn.toFixed(3)+' rad/s';$('dfd').textContent=mode==='sinusoidal'?(w/2/Math.PI).toFixed(3)+' Hz':'—';
+  const r=w/wn;$('dratio').textContent=mode==='sinusoidal'?r.toFixed(3):'—';$('dratioBox').classList.toggle('hot',w>0&&Math.abs(r-1)<.12&&zeta<.3);
+  const kind=zeta<1e-9?'undamped':Math.abs(zeta-1)<1e-6?'critical':zeta>1?'overdamped':'underdamped';$('dzeta').textContent=zeta.toFixed(4)+' · '+kind;
+  const X=theoryResponse().amplitude;$('dampLabel').textContent=mode==='step'?'Static displacement':'Steady amplitude';
+  $('damp').textContent=mode==='step'?(P.stepForce/k*1000).toFixed(3)+' mm':mode==='free'?'—':!Number.isFinite(X)?'No finite amplitude':(X*1000).toFixed(3)+' mm'+(X>STOP?' · exceeds stops':'');$('dampBox').classList.toggle('hot',mode==='sinusoidal'&&X>STOP);
+  const os=zeta<1?100*Math.exp(-Math.PI*zeta/Math.sqrt(1-zeta*zeta)):0;
+  $('stepSummary').textContent='Step theoretical check: x static = '+(P.stepForce/k*1000).toFixed(3)+' mm · ζ = '+zeta.toFixed(4)+'. '+(P.x0===0&&P.v0===0&&P.stepForce!==0?'Predicted overshoot '+os.toFixed(3)+'%. ':'Overshoot formula assumes a nonzero step from rest at x = 0. ')+(P.c===0?'No settling with zero damping.':'');
+  if(dryFriction()){
+    $('dampLabel').textContent=mode==='step'?'Rest-position band':'Linear amplitude';
+    $('damp').textContent=mode==='step'?(P.stepForce/k*1000).toFixed(2)+' ± '+(dryFriction()/k*1000).toFixed(2)+' mm':'Not valid with friction';
+    $('stepSummary').textContent='Dry friction is nonlinear. A resting cart satisfies |F₀ − (k₁+k₂)x| ≤ F_c; the final position need not equal F₀/(k₁+k₂). Linear PO/ζ formulas do not apply. Natural frequency and viscous damping ratio above are frictionless reference values.';
+  }
+}
+function plotWindow(){const span=WIN||Math.max(1,S.t),end=Math.max(span,S.t);return {span,end,start:end-span}}
+function chartSamples(){const {start,end}=plotWindow();return (WIN?hist:runLog).filter(p=>p.t>=start-1e-10&&p.t<=end+1e-10)}
+
+// ---------- theme ----------
+const C={};
+function readTheme(){const cs=getComputedStyle(document.documentElement);
+  ['bg','panel','ink','muted','line','rail','metal','metal-dark','cart','accent','x','v','a','warn'].forEach(n=>C[n]=cs.getPropertyValue('--'+n).trim());}
+readTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readTheme);
+new MutationObserver(readTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+// ---------- canvases ----------
+const rig=$('rig'), rctx=rig.getContext('2d'), chart=$('chart'), cctx=chart.getContext('2d');
+const graphPanel=$('graphPanel'), graphDock=$('graphDock'), graphDialog=$('graphDialog');
+let RW=0,RH=0,CW=0,CH=0;
+function fit(cv,ctx){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;
+  cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);return [r.width,r.height];}
+function fitCanvases(){[RW,RH]=fit(rig,rctx);[CW,CH]=fit(chart,cctx);drawRig();drawChart();}
+const canvasObserver=new ResizeObserver(fitCanvases);
+canvasObserver.observe(rig);canvasObserver.observe(chart);
+
+let G={};
+function geom(){
+  const s=Math.min(700,(RW-46)/1.25);
+  const mx=14+0.11*s+10, zero=mx+0.62*s;
+  G={s,mx,zero,wall:zero+0.5*s,rail:RH*0.74,sy:RH*0.74-0.075*s-6,cartW:0.14*s,cartH:Math.max(26,0.11*s)};
+  G.sy=G.rail-G.cartH*0.55-6;
+}
+const X=m=>G.zero+m*G.s;
+
+function spring(ctx,x1,x2,y,coils,amp,col){
+  const lead=Math.min(8,(x2-x1)*0.12), L=x2-x1-2*lead;
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x1+lead,y);
+  const n=coils*2;for(let i=1;i<=n;i++){const px=x1+lead+L*(i-0.5)/n;ctx.lineTo(px,y+(i%2?-amp:amp));}
+  ctx.lineTo(x2-lead,y);ctx.lineTo(x2,y);ctx.stroke();
+}
+function arrow(ctx,x,y,len,col,label){
+  if(Math.abs(len)<3)return; const d=Math.sign(len);
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+len-d*7,y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+len,y);ctx.lineTo(x+len-d*9,y-5);ctx.lineTo(x+len-d*9,y+5);ctx.closePath();ctx.fill();
+  ctx.font='600 11px "IBM Plex Mono",monospace';ctx.textAlign=d>0?'left':'right';ctx.textBaseline='middle';ctx.fillText(label,x+len+d*4,y);
+}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);}
+
+function drawRig(){
+  if(!RW)return; geom(); const c=rctx; c.clearRect(0,0,RW,RH);
+  const {s,mx,rail,sy,cartW,cartH}=G; const uu=u(S.th);
+  // floor & rail
+  c.fillStyle=C.line;c.fillRect(0,rail+12,RW,2);
+  c.strokeStyle=C.line;c.lineWidth=1;
+  for(let x=-10;x<RW;x+=10){c.beginPath();c.moveTo(x,rail+14);c.lineTo(x+8,rail+22);c.stroke();}
+  c.fillStyle=C.rail;c.fillRect(mx-0.11*s,rail,G.wall-(mx-0.11*s),4);
+  // scale ticks every 50 mm
+  c.fillStyle=C.muted;c.font='10px "IBM Plex Mono",monospace';c.textAlign='center';c.textBaseline='top';
+  for(let mm=-250;mm<=250;mm+=50){const px=X(mm/1000);c.fillRect(px,rail+4,1,mm%100?4:7);
+    if(mm%100===0&&(s>300||mm%200===0))c.fillText((mm>0?'+':'')+mm,px,rail+24);}
+  // bump stops
+  if(mode!=='step')[-1,1].forEach(d=>{const px=X(d*(STOP+0.07));c.fillStyle=bumpFlash>0.05&&Math.sign(S.x)===d?C.warn:C['metal-dark'];
+    c.fillRect(d<0?px-6:px,rail-12,6,12);});
+  // right wall
+  c.fillStyle=C['metal-dark'];c.fillRect(G.wall,sy-0.13*s-10,10,rail-sy+0.13*s+14);
+  c.strokeStyle=C.muted;for(let y=sy-0.13*s-6;y<rail;y+=9){c.beginPath();c.moveTo(G.wall+10,y);c.lineTo(G.wall+16,y-6);c.stroke();}
+  // motor housing
+  const R=0.11*s+4, my=sy;
+  c.fillStyle=C.panel;c.strokeStyle=C.muted;c.lineWidth=1.5;rr(c,mx-R-8,my-R-8,2*R+16,rail-my+R+8,6);c.fill();c.stroke();
+  c.fillStyle=C.muted;c.font='600 10px "Barlow Condensed",sans-serif';c.textAlign='center';c.textBaseline='bottom';
+  c.fillText('MOTOR · '+(movingAnchor()?P.rpm.toFixed(0):'0')+' RPM',mx,my-R-11);
+  // flywheel
+  c.fillStyle=C.metal;c.beginPath();c.arc(mx,my,R,0,7);c.fill();
+  c.strokeStyle=C['metal-dark'];c.lineWidth=2;c.stroke();
+  for(let i=0;i<3;i++){const a=S.th+i*2.094;c.beginPath();c.moveTo(mx,my);c.lineTo(mx+R*0.85*Math.sin(a),my-R*0.85*Math.cos(a));c.stroke();}
+  // pin & yoke
+  const Am=(movingAnchor()?P.A/1000:0)*s, px=mx+Am*Math.sin(S.th), py=my-Am*Math.cos(S.th);
+  const yokeH=R*1.15;
+  c.strokeStyle=C.ink;c.lineWidth=3;
+  c.beginPath();c.moveTo(px-4,my-yokeH);c.lineTo(px-4,my+yokeH);c.moveTo(px+4,my-yokeH);c.lineTo(px+4,my+yokeH);c.stroke();
+  c.fillStyle=C.accent;c.beginPath();c.arc(px,py,4.5,0,7);c.fill();
+  c.fillStyle=C.ink;c.beginPath();c.arc(mx,my,3,0,7);c.fill();
+  // push rod to anchor
+  const ax=X(-0.45+uu);
+  c.strokeStyle=C.ink;c.lineWidth=4;c.beginPath();c.moveTo(px+4,my);c.lineTo(ax,my);c.stroke();
+  c.fillStyle=C.ink;rr(c,ax-3,my-11,8,22,2);c.fill();
+  // cart
+  const drawX=mode==='step'?Math.max(-STOP,Math.min(STOP,S.x)):S.x;
+  const cx=X(drawX), cl=cx-cartW/2, cr=cx+cartW/2, ct=rail-cartH-8;
+  const ext1=(S.x-(-0.45+uu))-0.45+0.07, ext2=-S.x; // relative stretch vs rest
+  const F1=P.k1*(S.x-uu), F2=P.k2*S.x;
+  spring(c,ax+5,cl,sy,10,7,Math.abs(F1)>0.05?(F1>0?C.accent:C.x):C.muted);
+  spring(c,cr,G.wall,sy,10,7,Math.abs(F2)>0.05?(F2>0?C.x:C.accent):C.muted);
+  c.font='500 10.5px "IBM Plex Mono",monospace';c.fillStyle=C.muted;c.textAlign='center';c.textBaseline='bottom';
+  if(s>260){c.fillText('k₁ '+fmtF(-F1),(ax+cl)/2,sy-12);c.fillText('k₂ '+fmtF(-F2),(cr+G.wall)/2,sy-12);}
+  c.fillStyle=C.cart;rr(c,cl,ct,cartW,cartH,4);c.fill();
+  c.fillStyle=C.panel;c.globalAlpha=0.25;c.fillRect(cl+5,ct+5,cartW-10,3);c.globalAlpha=1;
+  c.fillStyle=C.panel;c.font='600 '+Math.max(10,cartH*0.38).toFixed(0)+'px "Barlow Condensed",sans-serif';c.textBaseline='middle';
+  c.fillText(P.m.toFixed(2)+' kg',cx,ct+cartH/2+2);
+  // wheels
+  const wr=4.5;[cl+cartW*0.22,cr-cartW*0.22].forEach(wx=>{c.fillStyle=C.ink;c.beginPath();c.arc(wx,rail-wr+0.5,wr,0,7);c.fill();
+    c.strokeStyle=C.metal;c.lineWidth=1.5;const a=S.x/0.0045;c.beginPath();c.moveTo(wx,rail-wr);c.lineTo(wx+wr*Math.cos(a),rail-wr+wr*Math.sin(a));c.stroke();});
+  // centre marker
+  c.fillStyle=C.accent;c.beginPath();c.moveTo(cx,rail+3);c.lineTo(cx-4,rail+10);c.lineTo(cx+4,rail+10);c.fill();
+  // vectors
+  const a=dragging?0:acc(S.x,S.v,S.th);
+  const top=ct-14, vs=Math.min(1,s/700);
+  arrow(c,cx,top,clampL(S.v*60*vs),C.v,'v');
+  arrow(c,cx,top-16,clampL(a*4*vs),C.a,'a');
+  if(mode==='step'||mode==='sinusoidal'&&excitation==='force')arrow(c,cx,top-34,clampL(inputForce(S.t,S.th)*12*vs),C.accent,'F');
+  if(mode==='sinusoidal'&&excitation==='caseC'){c.strokeStyle=C.accent;c.lineWidth=2;c.beginPath();c.moveTo(ax+5,sy+18);c.lineTo((ax+cl)/2-8,sy+18);c.rect((ax+cl)/2-8,sy+12,16,12);c.moveTo((ax+cl)/2,sy+18);c.lineTo(cl,sy+18);c.stroke();}
+  if(bumpFlash>0)bumpFlash*=0.9;
+}
+function clampL(l){const m=Math.min(140,RW*0.25);return Math.max(-m,Math.min(m,l));}
+function fmtF(f){return (f>=0?'+':'−')+Math.abs(f).toFixed(1)+' N';}
+
+function niceMax(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const n=v/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p;}
+// Reduce only the painted paths; preserve each bucket's extrema and all raw samples for inspection/export.
+function thinTrace(data,key,buckets){
+  if(data.length<=buckets*4)return data;
+  const result=[],stride=Math.ceil(data.length/buckets);
+  for(let start=0;start<data.length;start+=stride){
+    const end=Math.min(data.length,start+stride);let low=start,high=start;
+    for(let i=start+1;i<end;i++){if(data[i][key]<data[low][key])low=i;if(data[i][key]>data[high][key])high=i;}
+    const indices=[start,low,high,end-1].sort((a,b)=>a-b);
+    indices.forEach((index,j)=>{if(!j||index!==indices[j-1])result.push(data[index]);});
+  }
+  return result;
+}
+function drawChart(){
+  if(!CW)return; const c=cctx; c.clearRect(0,0,CW,CH);
+  const L=52,Rm=12,T=8,gap=14, lane=(CH-T-8-gap*2)/3, w=CW-L-Rm;
+  const window=plotWindow(),tEnd=window.end,tStart=window.start,tx=t=>L+(t-tStart)/window.span*w;
+  const samples=chartSamples();
+  const lanes=[
+    {key:'x',col:C.x,mul:1000,unit:'mm',extra:movingAnchor()},
+    {key:'f',col:C.accent,mul:1,unit:'N'},
+    {key:'a',col:C.a,mul:1,unit:'m/s²'}];
+  lanes.forEach((ln,i)=>{
+    const y0=T+i*(lane+gap), mid=y0+lane/2;
+    let mx=0; for(const p of samples){mx=Math.max(mx,Math.abs(p[ln.key]*ln.mul));if(ln.extra)mx=Math.max(mx,Math.abs(p.u*1000));}
+    if(ln.key==='x'&&mode==='step')mx=Math.max(mx,Math.abs(P.stepForce/(P.k1+P.k2)*1000));
+    if(ln.key==='f'&&mode==='step')mx=Math.max(mx,Math.abs(P.stepForce));
+    const top=niceMax(Math.max(mx*1.1,ln.key==='x'?5:0.2)), sc=(lane/2)/top;
+    c.fillStyle=C.bg;c.fillRect(L,y0,w,lane);
+    c.strokeStyle=C.line;c.lineWidth=1;
+    for(let k=Math.ceil(tStart/Math.max(.1,window.span/10))*Math.max(.1,window.span/10);k<=tEnd+1e-10;k+=Math.max(.1,window.span/10)){const x=tx(k);c.beginPath();c.moveTo(x,y0);c.lineTo(x,y0+lane);c.stroke();}
+    [-0.5,0.5].forEach(f=>{c.beginPath();c.moveTo(L,mid+f*lane);c.lineTo(L+w,mid+f*lane);c.stroke();});
+    c.strokeStyle=C.muted;c.globalAlpha=0.6;c.beginPath();c.moveTo(L,mid);c.lineTo(L+w,mid);c.stroke();c.globalAlpha=1;
+    c.fillStyle=C.muted;c.font='10px "IBM Plex Mono",monospace';c.textAlign='right';c.textBaseline='middle';
+    const fv=v=>Math.abs(v)>=10?v.toFixed(0):Math.abs(v)>=1?v.toFixed(1):v.toFixed(2);
+    c.fillText('+'+fv(top),L-6,y0+5);c.fillText('0',L-6,mid);c.fillText('−'+fv(top),L-6,y0+lane-5);
+    c.save();c.translate(10,mid);c.rotate(-Math.PI/2);c.textAlign='center';c.fillStyle=ln.col;c.font='600 11px "Barlow Condensed",sans-serif';
+    c.fillText(ln.key.toUpperCase()+' ('+ln.unit+')',0,0);c.restore();
+    c.save();c.beginPath();c.rect(L,y0,w,lane);c.clip();
+    if(mode==='step'){
+      if(ln.key==='x'){
+        const yy=mid-P.stepForce/(P.k1+P.k2)*1000*sc;
+        c.strokeStyle=C.muted;c.setLineDash([5,4]);c.beginPath();c.moveTo(L,yy);c.lineTo(L+w,yy);c.stroke();c.setLineDash([]);
+      }
+      const sx=tx(P.stepTime);c.strokeStyle=C.accent;c.setLineDash([2,4]);c.beginPath();c.moveTo(sx,y0);c.lineTo(sx,y0+lane);c.stroke();c.setLineDash([]);
+      if(i===0&&P.stepTime>=tStart&&P.stepTime<=tEnd){c.fillStyle=C.accent;c.textAlign='left';c.textBaseline='top';c.fillText('step '+P.stepTime.toFixed(1)+'s',Math.min(sx+4,L+w-64),y0+3);}
+    }
+    if(ln.extra&&samples.length>1){c.strokeStyle=C.muted;c.setLineDash([4,3]);c.lineWidth=1.2;c.beginPath();
+      thinTrace(samples,'u',Math.max(1,Math.floor(w))).forEach((p,j)=>{const X=tx(p.t),Y=mid-p.u*1000*sc;j?c.lineTo(X,Y):c.moveTo(X,Y);});c.stroke();c.setLineDash([]);}
+    if(samples.length>1){c.strokeStyle=ln.col;c.lineWidth=2;c.lineJoin='round';c.beginPath();
+      thinTrace(samples,ln.key,Math.max(1,Math.floor(w))).forEach((p,j)=>{const X=tx(p.t),Y=mid-p[ln.key]*ln.mul*sc;j?c.lineTo(X,Y):c.moveTo(X,Y);});c.stroke();
+      const lp=samples[samples.length-1];c.fillStyle=ln.col;c.beginPath();c.arc(tx(lp.t),mid-lp[ln.key]*ln.mul*sc,3.5,0,7);c.fill();}
+    if(selectedPoint){
+      const px=tx(selectedPoint.t),py=mid-selectedPoint[ln.key]*ln.mul*sc;
+      c.strokeStyle=C.ink;c.lineWidth=1;c.setLineDash([3,3]);c.beginPath();c.moveTo(px,y0);c.lineTo(px,y0+lane);c.stroke();c.setLineDash([]);
+      c.fillStyle=C.panel;c.strokeStyle=ln.col;c.lineWidth=2;c.beginPath();c.arc(px,py,5,0,Math.PI*2);c.fill();c.stroke();
+      if(ln.extra){c.strokeStyle=C.muted;c.beginPath();c.arc(px,mid-selectedPoint.u*1000*sc,4,0,Math.PI*2);c.stroke();}
+      const value=sgn(selectedPoint[ln.key]*ln.mul,ln.key==='a'?4:3);
+      const label=(i===0?'t '+selectedPoint.t.toFixed(4)+' s · ':'')+ln.key+' '+value+' '+ln.unit;
+      c.font='11px "IBM Plex Mono",monospace';
+      const textWidth=c.measureText(label).width;
+      if(textWidth>w-20)c.font=(11*(w-20)/textWidth).toFixed(1)+'px "IBM Plex Mono",monospace';
+      const labelWidth=c.measureText(label).width+12,lx=Math.max(L+4,Math.min(px+8,L+w-labelWidth-4)),ly=y0+5;
+      c.fillStyle=C.panel;c.fillRect(lx,ly,labelWidth,21);c.strokeStyle=ln.col;c.lineWidth=1;c.strokeRect(lx,ly,labelWidth,21);
+      c.fillStyle=C.ink;c.textAlign='left';c.textBaseline='middle';c.fillText(label,lx+6,ly+10.5);
+    }
+    c.restore();
+  });
+  c.fillStyle=C.muted;c.font='10px "IBM Plex Mono",monospace';c.textAlign='center';c.textBaseline='bottom';
+  const tick=window.span<=2?.2:window.span<=10?2:niceMax(window.span/6);
+  for(let k=Math.ceil(tStart/tick)*tick;k<=tEnd+1e-10;k+=tick)c.fillText((tick<1?k.toFixed(1):k.toFixed(0))+'s',tx(k),CH);
+}
+
+function expandGraphs(){
+  if(graphDialog.open)return;
+  graphDialog.append(graphPanel);graphDialog.showModal();document.body.classList.add('graphs-open');
+  $('expandGraphs').textContent='Close expanded view';$('expandGraphs').setAttribute('aria-expanded','true');
+  $('chartHelp').textContent='Click or tap a trace to pause and read a point. Use ← / → to move between points; Play resumes. Escape closes this view.';
+  fitCanvases();
+}
+function closeGraphs(){
+  if(!graphDialog.open)return;
+  graphDialog.close();graphDock.append(graphPanel);document.body.classList.remove('graphs-open');
+  $('expandGraphs').textContent='Expand graphs ↗';$('expandGraphs').setAttribute('aria-expanded','false');
+  $('chartHelp').textContent='Click a graph to expand it and inspect a point, or use Expand graphs for a larger live view.';
+  fitCanvases();$('expandGraphs').focus({preventScroll:true});
+}
+$('expandGraphs').addEventListener('click',()=>{graphDialog.open?closeGraphs():expandGraphs();});
+graphDialog.addEventListener('cancel',e=>{e.preventDefault();closeGraphs();});
+graphDialog.addEventListener('click',e=>{if(e.target===graphDialog)closeGraphs();});
+
+// Inspect recorded samples rather than interpolating across input discontinuities.
+function clearPoint(){selectedPoint=null;$('pointReader').hidden=true;}
+function selectPoint(index){
+  const samples=chartSamples();if(!samples.length)return;
+  selectedPoint=samples[Math.max(0,Math.min(samples.length-1,index))];
+  running=false;$('play').textContent='Play';
+  const p=selectedPoint;
+  $('pointT').textContent=p.t.toFixed(4)+' s';
+  $('pointX').textContent=sgn(p.x*1000,3)+' mm';
+  $('pointF').textContent=sgn(p.f,3)+' N';
+  $('pointA').textContent=sgn(p.a,4)+' m/s²';
+  $('pointU').textContent=sgn(p.u*1000,3)+' mm';
+  $('pointMotor').hidden=!movingAnchor();
+  let context='Nearest recorded point. Use ← / → to move; Play resumes.';
+  if(mode==='step'){
+    const delta=p.t-P.stepTime;
+    context=Math.abs(delta)<1e-9&&P.stepForce!==0?
+      'At step onset · '+(p.f===0?'immediately before the force switches on.':'immediately after the force switches on.'):
+      Math.abs(delta).toFixed(4)+' s '+(delta<0?'before':'after')+' step onset.';
+  }
+  $('pointContext').textContent=context;$('pointReader').hidden=false;
+  drawChart();
+}
+chart.addEventListener('click',e=>{
+  const r=chart.getBoundingClientRect(),px=(e.clientX-r.left)*CW/r.width,py=(e.clientY-r.top)*CH/r.height;
+  if(px<52||px>CW-12||py<8||py>CH-8||!hist.length)return;
+  const window=plotWindow(),target=window.start+(px-52)/(CW-64)*window.span,samples=chartSamples();
+  let index=0,best=Infinity;
+  samples.forEach((p,i)=>{const distance=Math.abs(p.t-target);if(distance<=best){index=i;best=distance;}});
+  if(!graphDialog.open)expandGraphs();
+  selectPoint(index);chart.focus({preventScroll:true});
+});
+chart.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();if(graphDialog.open)closeGraphs();else clearPoint();return;}
+  if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+  e.preventDefault();
+  const samples=chartSamples(),index=selectedPoint?samples.indexOf(selectedPoint):-1;
+  selectPoint(e.key==='Home'?0:e.key==='End'?samples.length-1:index<0?samples.length-1:index+(e.key==='ArrowLeft'?-1:1));
+});
+$('clearPoint').addEventListener('click',()=>{clearPoint();chart.focus({preventScroll:true});});
+
+function sgn(v,d){return (v>=0?'+':'−')+Math.abs(v).toFixed(d);}
+function updateReadouts(){
+  $('graphPlay').textContent=running?'Pause':'Play';
+  $('logStatus').textContent=runLog.length.toLocaleString()+' recorded samples · 1,000 Hz · '+S.t.toFixed(2)+' s retained · export before Reset';
+  $('clock').textContent='t = '+S.t.toFixed(2)+' s';
+  const force=inputForce(S.t,S.th), isStep=mode==='step';
+  const status=isStep?(S.t<P.stepTime?'Waiting · step at '+P.stepTime.toFixed(1)+' s':'Step ON · held constant'):
+    mode==='free'?'Free vibration · input zero':movingAnchor()?'Sinusoidal · yₘ = '+(u(S.th)*1000).toFixed(2)+' mm':'Sinusoidal direct force';
+  const text=status+' · F = '+force.toFixed(2)+' N'+(dryFriction()?' · '+(Math.abs(S.v)<=1e-12&&Math.abs(force-(P.k1+P.k2)*S.x)<=dryFriction()?'sticking':'sliding'):'');
+  // Do not announce a continually changing sinusoid via the live status region.
+  $('inputStatus').setAttribute('aria-live',mode==='sinusoidal'?'off':'polite');
+  if($('inputStatus').textContent!==text)$('inputStatus').textContent=text;
+  $('hint').textContent=isStep?(Math.abs(S.x)>STOP?'Cart drawing off scale · use plots for full x':'Ideal linear step · contacts disabled'):'Bump stops at ±250 mm';
+}
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(running)advance(dt*P.speed);
+  drawRig();drawChart();updateReadouts();updateSweepStatus(now);
+  requestAnimationFrame(frame);
+}
+
+// Full-run CSV includes the applied input, both motion signals, units, and each setup segment.
+function csvCell(value){return typeof value==='number'?Number.isFinite(value)?String(value):'':('"'+String(value??'').replace(/"/g,'""')+'"')}
+function csvText(headers,rows){return [headers,...rows].map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n'}
+function downloadCSV(name,text){const url=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function runCSV(){
+  const headers=['data_source','run','setup_segment','mode','excitation','time_s','phase_rad','reference_kind','reference_value_SI','reference_unit','force_N','motor_displacement_m','motor_velocity_m_s','displacement_m','velocity_m_s','acceleration_m_s2','mass_kg','k1_or_km_N_m','k2_or_k0_N_m','c_or_c0_N_s_m','cm_N_s_m','motor_amplitude_m','sine_force_amplitude_N','frequency_Hz','step_force_N','step_onset_s','initial_displacement_m','initial_velocity_m_s','contact_count','hand_dragging','dry_friction_enabled','dry_friction_limit_N','dry_friction_force_N','sticking'];
+  return csvText(headers,runLog.map(p=>{const c=p.segment.config,base=c.mode==='sinusoidal'&&c.excitation!=='force';return ['idealized_simulation_not_OSCAR',runNumber,p.segment.id,c.mode,c.excitation,p.t,p.th,base?'motor_displacement':'force',base?p.u:p.f,base?'m':'N',p.f,p.u,p.udot,p.x,p.v,p.a,c.m,c.k1,c.k2,c.c,c.cm,c.A,c.forceAmp,c.mode==='sinusoidal'?c.rpm/60:0,c.stepForce,c.stepTime,c.x0,c.v0,p.contactCount,p.dragging?1:0,c.frictionOn?1:0,c.frictionN,p.friction,p.sticking?1:0]}));
+}
+$('exportRun').addEventListener('click',()=>downloadCSV('MSE281_simulated_run_'+runNumber+'.csv',runCSV()));
+$('plotWindow').addEventListener('change',()=>{WIN=Number($('plotWindow').value);clearPoint();drawChart()});
+$('excitation').addEventListener('change',()=>{excitation=$('excitation').value;syncMode();resetAndPause()});
+$('frictionOn').addEventListener('change',()=>{P.frictionOn=$('frictionOn').checked;syncMode();resetAndPause();updateSweepStatus(performance.now(),true)});
+$('frictionN').addEventListener('input',()=>{syncMode();resetAndPause();updateSweepStatus(performance.now(),true)});
+// Least-squares fit y = a sin(theta) + b cos(theta) + offset.
+function sineFit(data,value){
+  if(data.length<6)return null;
+  const M=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  for(const p of data){const basis=[Math.sin(p.th),Math.cos(p.th),1],y=value(p);for(let i=0;i<3;i++){for(let j=0;j<3;j++)M[i][j]+=basis[i]*basis[j];M[i][3]+=basis[i]*y;}}
+  for(let k=0;k<3;k++){
+    let pivot=k;for(let i=k+1;i<3;i++)if(Math.abs(M[i][k])>Math.abs(M[pivot][k]))pivot=i;
+    [M[k],M[pivot]]=[M[pivot],M[k]];if(Math.abs(M[k][k])<1e-12)return null;
+    const d=M[k][k];for(let j=k;j<4;j++)M[k][j]/=d;
+    for(let i=0;i<3;i++)if(i!==k){const f=M[i][k];for(let j=k;j<4;j++)M[i][j]-=f*M[k][j];}
+  }
+  const [a,b,offset]=M.map(row=>row[3]),amplitude=Math.hypot(a,b);let sum=0;
+  for(const p of data){const error=value(p)-a*Math.sin(p.th)-b*Math.cos(p.th)-offset;sum+=error*error;}
+  return {a,b,offset,amplitude,phase:Math.atan2(b,a),relativeResidual:Math.sqrt(sum/data.length)/Math.max(amplitude,1e-14)};
+}
+function wrapDegrees(deg){return ((deg+180)%360+360)%360-180}
+function sweepSignature(){return JSON.stringify({friction:dryFriction(),excitation,m:P.m,k1:P.k1,k2:P.k2,c:P.c,cm:excitation==='caseC'?P.cm:0,amplitude:excitation==='force'?P.forceAmp:P.A/1000})}
+function analyseSweep(){
+  if(dryFriction())return {ok:false,message:'Dry friction is on: sticking and distortion are nonlinear. Export the run for comparison; switch friction off for the linear frequency-response table.'};
+  if(mode!=='sinusoidal')return {ok:false,message:'Choose Force sweep, Case C sweep, or another sinusoidal model to measure a frequency response.'};
+  const f=P.rpm/60;if(!(f>0))return {ok:false,message:'Set a nonzero drive frequency.'};
+  const discard=Number($('discardTime').value);
+  if(!$('discardTime').checkValidity()||$('discardTime').value===''||!Number.isFinite(discard))return {ok:false,message:'Enter a valid discard time from 0 to 120 s.'};
+  ensureSegment();const duration=5/f,end=runLog[runLog.length-1].t,start=end-duration;
+  if(end-segment.start<discard+duration-1e-8)return {ok:false,message:'Wait until t ≥ '+(segment.start+discard+duration).toFixed(3)+' s for the chosen discard interval plus five cycles. Current t = '+S.t.toFixed(2)+' s.'};
+  if(segment.dragged)return {ok:false,message:'The cart was dragged in this setup. Reset and collect an untouched run.'};
+  const data=[];for(let i=runLog.length-1;i>=0;i--){const p=runLog[i];if(p.t<start-1e-10)break;if(p.segment!==segment)return {ok:false,message:'The analysis window crosses a setup change. Allow five new cycles after the discard interval.'};data.push(p);}data.reverse();
+  if(data.length<6)return {ok:false,message:'Not enough recorded samples.'};
+  if(data.some(p=>p.dragging)||data[0].contactCount!==data[data.length-1].contactCount)return {ok:false,message:'Contact or hand motion occurred in this window. Reduce the input amplitude, Reset, and repeat.'};
+  const ref=p=>movingAnchor()?p.u:p.f,xFit=sineFit(data,p=>p.x),qFit=sineFit(data,ref);
+  if(!xFit||!qFit||qFit.amplitude<1e-12||xFit.amplitude<1e-12)return {ok:false,message:'A nonzero sinusoidal input and measurable response are required.'};
+  const first=sineFit(data.filter(p=>p.t<=start+2/f),p=>p.x),last=sineFit(data.filter(p=>p.t>=end-2/f),p=>p.x);
+  const drift=first&&last?Math.abs(first.amplitude-last.amplitude)/xFit.amplitude:Infinity;
+  const phaseDrift=first&&last?Math.abs(wrapDegrees((first.phase-last.phase)*180/Math.PI)):Infinity;
+  if(xFit.relativeResidual>.01||drift>.01||phaseDrift>1)return {ok:false,message:'Transient or waveform distortion is still visible: fit residual '+(100*xFit.relativeResidual).toFixed(2)+'%, amplitude change '+(100*drift).toFixed(2)+'%. Wait longer, or increase the discard time; do not report this as steady state.'};
+  if(sweepRows.length&&sweepRows[0].signature!==sweepSignature())return {ok:false,message:'This setup differs from the saved table. Export that table, then Clear table before measuring the new setup.'};
+  let xmin=Infinity,xmax=-Infinity;for(const p of data){xmin=Math.min(xmin,p.x);xmax=Math.max(xmax,p.x);}
+  const X=(xmax-xmin)/2,phase=wrapDegrees((xFit.phase-qFit.phase)*180/Math.PI),info=referenceInfo();
+  return {ok:true,message:'Ready: last five cycles, t = '+start.toFixed(3)+'–'+end.toFixed(3)+' s. Fit residual '+(100*xFit.relativeResidual).toFixed(3)+'%. Reference: '+(movingAnchor()?'yₘ, gain X/Yₘ (mm/mm).':'force, gain X/Fₐ (mm/N).'),row:{f,input:qFit.amplitude,inputUnit:info.unit,xmin:xmin*1000,xmax:xmax*1000,X:X*1000,gain:X/qFit.amplitude*(movingAnchor()?1:1000),gainUnit:info.gainUnit,phaseWrapped:phase,phase,delay:-phase/(360*f),fitAmplitude:xFit.amplitude*1000,residual:xFit.relativeResidual,start,end,samples:data.length,signature:sweepSignature(),config:{...segment.config}}};
+}
+let lastSweepUpdate=-Infinity;
+function updateSweepStatus(now=performance.now(),force=false){
+  if(!force&&now-lastSweepUpdate<500)return;lastSweepUpdate=now;
+  analysisCache=analyseSweep();$('sweepStatus').textContent=analysisCache.message;$('captureSweep').disabled=!analysisCache.ok;
+}
+function setFrequency(f){
+  if(!Number.isFinite(f)||f<=0||f>8)return;
+  if(mode!=='sinusoidal'){mode='sinusoidal';excitation='force';$('inputMode').value=mode;$('excitation').value=excitation;}
+  $('rpm').value=Math.round(f*60);readParams();syncMode();reset();running=true;$('play').textContent=$('graphPlay').textContent='Pause';updateSweepStatus(performance.now(),true);
+}
+document.querySelectorAll('[data-freq]').forEach(b=>b.addEventListener('click',()=>setFrequency(Number(b.dataset.freq))));
+$('setFrequency').addEventListener('click',()=>{const el=$('fineFrequency');if(el.value!==''&&el.checkValidity())setFrequency(Number(el.value));else el.reportValidity()});
+$('discardTime').addEventListener('change',()=>updateSweepStatus(performance.now(),true));
+$('captureSweep').addEventListener('click',()=>{
+  const result=analyseSweep();if(!result.ok){$('sweepStatus').textContent=result.message;return;}
+  const at=sweepRows.findIndex(row=>Math.abs(row.f-result.row.f)<1e-9);if(at>=0)sweepRows[at]=result.row;else sweepRows.push(result.row);renderSweep();updateSweepStatus(performance.now(),true);
+});
+$('clearSweep').addEventListener('click',()=>{sweepRows.length=0;renderSweep();updateSweepStatus(performance.now(),true)});
+function sweepCSV(){
+  const headers=['data_source','frequency_Hz','reference_kind','input_amplitude_SI','input_unit','x_min_mm','x_max_mm','X_half_peak_to_peak_mm','gain','gain_unit','equivalent_signed_delay_s','unwrapped_phase_deg','wrapped_phase_deg','sine_fit_X_mm','fit_relative_RMS_residual','window_start_s','window_end_s','samples','excitation','mass_kg','k1_or_km_N_m','k2_or_k0_N_m','c_or_c0_N_s_m','cm_N_s_m'];
+  return csvText(headers,sweepRows.map(r=>['idealized_simulation_not_OSCAR',r.f,r.inputUnit==='N'?'force':'motor_displacement',r.input,r.inputUnit,r.xmin,r.xmax,r.X,r.gain,r.gainUnit,r.delay,r.phase,r.phaseWrapped,r.fitAmplitude,r.residual,r.start,r.end,r.samples,r.config.excitation,r.config.m,r.config.k1,r.config.k2,r.config.c,r.config.cm]));
+}
+$('exportSweep').addEventListener('click',()=>downloadCSV('MSE281_simulated_frequency_sweep.csv',sweepCSV()));
+function renderSweep(){
+  sweepRows.sort((a,b)=>a.f-b.f);
+  sweepRows.forEach((row,i)=>{row.phase=row.phaseWrapped;if(i){while(row.phase-sweepRows[i-1].phase>180)row.phase-=360;while(row.phase-sweepRows[i-1].phase<-180)row.phase+=360;}row.delay=-row.phase/(360*row.f)});
+  const unit=sweepRows[0]?.gainUnit||'—';$('gainHeading').textContent='Gain ('+unit+')';$('sweepCaption').textContent=sweepRows.length?sweepRows.length+' simulated points · '+(sweepRows[0].inputUnit==='N'?'X/Fₐ, not X/PWM':'X/Yₘ, not X/PWM')+' · one unchanged setup':'No sweep measurements yet.';
+  $('sweepBody').replaceChildren();for(const row of sweepRows){const tr=document.createElement('tr');const values=[row.f.toFixed(3),(row.input*(row.inputUnit==='m'?1000:1)).toFixed(4)+' '+(row.inputUnit==='m'?'mm':'N'),row.xmin.toFixed(4),row.xmax.toFixed(4),row.X.toFixed(4),row.gain.toPrecision(6),row.delay.toFixed(6),row.phase.toFixed(3)];for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td)}$('sweepBody').append(tr);}
+  $('exportSweep').disabled=!sweepRows.length;renderSweepPlot('gainPlot','gain','Magnitude · '+unit);renderSweepPlot('phasePlot','phase','Phase relative to '+(sweepRows[0]?.inputUnit==='m'?'yₘ':'force')+' (°)');
+}
+function renderSweepPlot(id,key,label){
+  const svg=$(id),NS='http://www.w3.org/2000/svg',L=70,R=20,T=40,B=45,W=600,H=290;
+  svg.replaceChildren();function el(tag,attrs,text){const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;svg.append(n);return n}
+  el('text',{x:L,y:23,fill:'currentColor','font-size':14},label);
+  const xmax=Math.max(6,...sweepRows.map(r=>r.f)),values=sweepRows.map(r=>r[key]);let ymin=key==='gain'?0:Math.min(0,...values),ymax=key==='gain'?(values.length?Math.max(1e-6,...values)*1.15:1):Math.max(0,...values);
+  if(ymax-ymin<1e-9){ymin=key==='gain'?0:-180;ymax=key==='gain'?1:0;}if(key==='phase'){ymin-=15;ymax+=15;}
+  const tx=x=>L+x/xmax*(W-L-R),ty=y=>H-B-(y-ymin)/(ymax-ymin)*(H-T-B);
+  for(let i=0;i<=4;i++){const y=ymin+(ymax-ymin)*i/4;el('line',{x1:L,y1:ty(y),x2:W-R,y2:ty(y),stroke:'var(--line)'});el('text',{x:L-8,y:ty(y)+4,fill:'currentColor','text-anchor':'end','font-size':11},key==='gain'?y.toPrecision(3):y.toFixed(0));}
+  for(let x=0;x<=xmax+1e-9;x+=1){el('text',{x:tx(x),y:H-B+20,fill:'currentColor','text-anchor':'middle','font-size':11},x.toFixed(0));}
+  el('line',{x1:L,y1:T,x2:L,y2:H-B,stroke:'currentColor'});el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,stroke:'currentColor'});el('text',{x:(L+W-R)/2,y:H-7,fill:'currentColor','text-anchor':'middle','font-size':12},'Frequency (Hz)');
+  if(sweepRows.length){el('polyline',{points:sweepRows.map(r=>tx(r.f)+','+ty(r[key])).join(' '),fill:'none',stroke:'var(--x)','stroke-width':2});for(const row of sweepRows){const dot=el('circle',{cx:tx(row.f),cy:ty(row[key]),r:4,fill:'var(--x)'});const title=document.createElementNS(NS,'title');title.textContent=row.f.toFixed(3)+' Hz: '+row[key].toPrecision(6);dot.append(title);}}else el('text',{x:330,y:150,fill:'var(--muted)','text-anchor':'middle','font-size':13},'Capture steady-state points to build this plot.');
+}
+renderSweep();
+
+
+// controls
+['play','graphPlay'].forEach(id=>$(id).addEventListener('click',()=>{running=!running;if(running)clearPoint();$('play').textContent=$('graphPlay').textContent=running?'Pause':'Play';}));
+$('reset').addEventListener('click',resetAndPause);
+$('inputMode').addEventListener('change',()=>{mode=$('inputMode').value;syncMode();resetAndPause();});
+['stepForce','stepTime'].forEach(id=>$(id).addEventListener('change',()=>{
+  const value=Number($(id).value);
+  if($(id).value.trim()===''||!Number.isFinite(value)||!$(id).checkValidity()){
+    $(id).reportValidity();$(id).value=P[id];return;
+  }
+  P[id]=value;updateDerived();resetAndPause();
+}));
+const presets={
+  step:{m:1,k1:40,k2:40,c:4,stepForce:4,stepTime:1,x0:0,v0:0},
+  force:{m:1,k1:40,k2:40,c:2,forceAmp:1,rpm:60,x0:0,v0:0},
+  caseC:{m:1,k1:40,k2:40,c:.8,cm:1.2,A:10,rpm:60,x0:0,v0:0},
+  below:{rpm:40,A:30,c:0.8,x0:0,v0:0},
+  above:{rpm:200,A:60,c:0.8,x0:0,v0:0},
+  free:{A:0,c:0.3,x0:150,v0:0},
+  heavy:{c:14,A:40,rpm:60,x0:120,v0:0},
+  res:null
+};
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+  const key=b.dataset.preset; let p=presets[key];
+  if(key==='res'){const wn=Math.sqrt((P.k1+P.k2)/P.m);p={rpm:Math.min(480,Math.round(wn*60/2/Math.PI)),A:15,c:0.8,x0:0,v0:0};}
+  Object.entries(p).forEach(([k,v])=>{$(k).value=v;});
+  mode=key==='step'?'step':key==='free'?'free':'sinusoidal';$('inputMode').value=mode;
+  excitation=key==='force'?'force':key==='caseC'?'caseC':'anchor';$('excitation').value=excitation;
+  P.stepForce=Number($('stepForce').value);P.stepTime=Number($('stepTime').value);
+  readParams();syncMode();reset();if(!running){running=true;$('play').textContent='Pause';}
+}));
+
+// drag cart
+function toM(e){const r=rig.getBoundingClientRect();return {x:(e.clientX-r.left-G.zero)/G.s,y:e.clientY-r.top};}
+rig.addEventListener('pointerdown',e=>{if(mode==='step')return;const p=toM(e);if(Math.abs(p.x-S.x)<0.12){ensureSegment();segment.dragged=true;dragging=true;rig.setPointerCapture(e.pointerId);rig.style.cursor='grabbing';}});
+rig.addEventListener('pointermove',e=>{if(!dragging)return;S.x=Math.max(-STOP,Math.min(STOP,toM(e).x));S.v=0;});
+const end=()=>{if(dragging){dragging=false;rig.style.cursor='grab';}};
+rig.addEventListener('pointerup',end);rig.addEventListener('pointercancel',end);
+
+readParams();syncMode();reset();
+if(!running)$('play').textContent='Play';
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
